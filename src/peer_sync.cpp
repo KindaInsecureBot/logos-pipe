@@ -5,8 +5,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
-
-namespace LogosSync {
+#include <QRegularExpression>
 
 PeerSync::PeerSync(QObject* parent)
     : QObject(parent)
@@ -109,11 +108,13 @@ void PeerSync::onMessage(const QString& convoId,
     if (!m_watchedConvos.contains(convoId)) return;
     if (senderPubkey.isEmpty() || contentHex.isEmpty()) return;
 
+    // Reject non-hex payloads before decoding.
+    static const QRegularExpression hexRe(QStringLiteral("^[0-9a-fA-F]+$"));
+    if (!hexRe.match(contentHex).hasMatch()) return;
+
     // Decode hex-encoded payload.
     const QByteArray raw = QByteArray::fromHex(contentHex.toLatin1());
     if (raw.isEmpty()) return;
 
     emit messageReceived(senderPubkey, raw);
 }
-
-} // namespace LogosSync

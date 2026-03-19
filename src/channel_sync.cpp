@@ -2,10 +2,6 @@
 #include "sync_types.h"
 #include "module_proxy.h"
 
-#include <QJsonDocument>
-#include <QJsonArray>
-#include <QJsonObject>
-
 ChannelSync::ChannelSync(QObject* parent)
     : QObject(parent)
 {}
@@ -21,24 +17,31 @@ void ChannelSync::setSigningKey(const QString& privkeyHex)
 }
 
 // static
-QString ChannelSync::deriveChannelId(const QString& appPrefix, const QString& uniqueId)
+QString ChannelSync::deriveChannelId(const QString& appPrefix,
+                                     const QString& uniqueId)
 {
     return LogosSync::deriveChannelId(appPrefix, uniqueId);
 }
 
 QString ChannelSync::inscribe(const QString& channelId, const QByteArray& data)
 {
-    if (!m_blockchain || channelId.isEmpty() || data.isEmpty()) return {};
+    if (!m_blockchain) {
+        emit error("ChannelSync: no blockchain client available");
+        return {};
+    }
+    if (channelId.isEmpty() || data.isEmpty()) {
+        emit error("ChannelSync: channelId and data must not be empty");
+        return {};
+    }
 
-    // Hex-encode data for wire transport.
     const QString dataHex = QString::fromLatin1(data.toHex());
     const QVariant result = m_blockchain->invokeRemoteMethod(
-        "zone_module", "inscribe", channelId, dataHex, m_signingKey);
+        "blockchain_module", "inscribe", channelId, dataHex, m_signingKey);
 
     const QString inscriptionId = result.toString().trimmed();
     if (inscriptionId.isEmpty()) {
-        emit error("inscribe",
-                   "zone module returned empty inscription ID for channel: " + channelId);
+        emit error("ChannelSync: blockchain module returned empty inscription ID "
+                   "for channel: " + channelId);
         return {};
     }
 
@@ -46,27 +49,14 @@ QString ChannelSync::inscribe(const QString& channelId, const QByteArray& data)
     return inscriptionId;
 }
 
-QList<QPair<QString, QByteArray>> ChannelSync::queryChannel(const QString& channelId)
+QString ChannelSync::queryChannel(const QString& channelId)
 {
     if (!m_blockchain || channelId.isEmpty()) return {};
 
-    // zone_module returns a JSON array:
-    // [{"id":"<inscriptionId>", "data":"<hex>", "timestamp":"..."}, ...]
     const QVariant result = m_blockchain->invokeRemoteMethod(
-        "zone_module", "queryChannel", channelId);
+        "blockchain_module", "queryChannel", channelId);
     const QString json = result.toString();
-    if (json.isEmpty()) return {};
-
-    const QJsonArray arr = QJsonDocument::fromJson(json.toUtf8()).array();
-    QList<QPair<QString, QByteArray>> out;
-    out.reserve(arr.size());
-    for (const auto& item : arr) {
-        const QJsonObject obj = item.toObject();
-        const QString id     = obj["id"].toString();
-        const QByteArray raw = QByteArray::fromHex(obj["data"].toString().toLatin1());
-        if (!id.isEmpty()) out.append({id, raw});
-    }
-    return out;
+    return json.isEmpty() ? QStringLiteral("[]") : json;
 }
 
 void ChannelSync::follow(const QString& channelId)
@@ -75,7 +65,8 @@ void ChannelSync::follow(const QString& channelId)
     m_followedChannels.insert(channelId);
 
     if (!m_blockchain) return;
-    m_blockchain->invokeRemoteMethod("zone_module", "follow", channelId);
+    m_blockchain->invokeRemoteMethod("blockchain_module", "followChannel",
+                                     channelId);
 }
 
 void ChannelSync::unfollow(const QString& channelId)
@@ -84,7 +75,8 @@ void ChannelSync::unfollow(const QString& channelId)
     m_followedChannels.remove(channelId);
 
     if (!m_blockchain) return;
-    m_blockchain->invokeRemoteMethod("zone_module", "unfollow", channelId);
+    m_blockchain->invokeRemoteMethod("blockchain_module", "unfollowChannel",
+                                     channelId);
 }
 
 void ChannelSync::onInscription(const QString& channelId,

@@ -10,7 +10,7 @@ SyncModule::SyncModule(QObject* parent)
     : QObject(parent)
     , m_contentStore(new ContentStore(this))
     , m_channelSync(new ChannelSync(this))
-    , m_peerSync(new LogosSync::PeerSync(this))
+    , m_peerSync(new PeerSync(this))
 {
     connectSignals();
 }
@@ -29,14 +29,13 @@ void SyncModule::connectSignals()
     connect(m_channelSync, &ChannelSync::inscriptionReceived,
             this, &SyncModule::inscriptionReceived);
     connect(m_channelSync, &ChannelSync::error,
-            this, [this](const QString& /*op*/, const QString& msg) {
-                emit syncError("channel", msg); });
+            this, [this](const QString& msg) { emit syncError("channel", msg); });
 
-    connect(m_peerSync, &LogosSync::PeerSync::messageReceived,
+    connect(m_peerSync, &PeerSync::messageReceived,
             this, &SyncModule::messageReceived);
-    connect(m_peerSync, &LogosSync::PeerSync::started,
+    connect(m_peerSync, &PeerSync::started,
             this, &SyncModule::peerSyncStarted);
-    connect(m_peerSync, &LogosSync::PeerSync::error,
+    connect(m_peerSync, &PeerSync::error,
             this, [this](const QString& msg) { emit syncError("peer", msg); });
 }
 
@@ -45,9 +44,9 @@ void SyncModule::initLogos(LogosAPI* api)
     if (ModuleProxy* storage = api->getClient("storage_module"))
         m_contentStore->setStorageClient(storage);
 
-    if (ModuleProxy* zone = api->getClient("zone_module")) {
-        m_channelSync->setBlockchainClient(zone);
-        connectZoneModule(api);
+    if (ModuleProxy* blockchain = api->getClient("blockchain_module")) {
+        m_channelSync->setBlockchainClient(blockchain);
+        connectBlockchainModule(api);
     }
 
     if (ModuleProxy* chat = api->getClient("chat_module")) {
@@ -58,10 +57,10 @@ void SyncModule::initLogos(LogosAPI* api)
     m_peerSync->start();
 }
 
-void SyncModule::connectZoneModule(LogosAPI* api)
+void SyncModule::connectBlockchainModule(LogosAPI* api)
 {
-    // zone_module fires: inscriptionReceived(moduleId, channelId, inscriptionId, dataHex)
-    api->on("zone_module", "inscriptionReceived", [this](QVariantList args) {
+    // blockchain_module fires: inscriptionReceived(moduleId, channelId, inscriptionId, dataHex)
+    api->on("blockchain_module", "inscriptionReceived", [this](QVariantList args) {
         if (args.size() < 4) return;
         const QString channelId     = args.value(1).toString();
         const QString inscriptionId = args.value(2).toString();
@@ -116,15 +115,7 @@ QString SyncModule::inscribe(const QString& channelId, const QByteArray& data)
 
 QString SyncModule::queryChannel(const QString& channelId)
 {
-    const auto entries = m_channelSync->queryChannel(channelId);
-    QJsonArray arr;
-    for (const auto& [id, data] : entries) {
-        QJsonObject obj;
-        obj["id"]   = id;
-        obj["data"] = QString::fromLatin1(data.toHex());
-        arr.append(obj);
-    }
-    return QString::fromUtf8(QJsonDocument(arr).toJson(QJsonDocument::Compact));
+    return m_channelSync->queryChannel(channelId);
 }
 
 void SyncModule::follow(const QString& channelId)

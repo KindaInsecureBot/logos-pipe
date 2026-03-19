@@ -7,8 +7,6 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 
-namespace LogosSync {
-
 ContentStore::ContentStore(QObject* parent)
     : QObject(parent)
 {}
@@ -112,5 +110,3 @@ bool ContentStore::remove(const QString& cid)
         "storage_module", "remove", cid);
     return result.toBool();
 }
-
-} // namespace LogosSync

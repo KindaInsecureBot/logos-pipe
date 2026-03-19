@@ -5,8 +5,6 @@
 
 class ModuleProxy;
 
-namespace LogosSync {
-
 // ContentStore — content-addressed storage wrapper (Logos Storage module).
 //
 // Wraps org.logos.StorageModuleInterface to provide a clean store/fetch API
@@ -14,9 +12,8 @@ namespace LogosSync {
 // need to persist or retrieve content beyond the kv_module size limit.
 //
 // Usage:
-//   ContentStore* cs = syncModule->contentStore();
-//   QString cid = cs->store(jsonBytes);
-//   QByteArray data = cs->fetch(cid);
+//   QString cid = contentStore->store(jsonBytes);
+//   QByteArray data = contentStore->fetch(cid);
 class ContentStore : public QObject {
     Q_OBJECT
 public:
@@ -50,5 +47,3 @@ signals:
 private:
     ModuleProxy* m_storage = nullptr;
 };
-
-} // namespace LogosSync

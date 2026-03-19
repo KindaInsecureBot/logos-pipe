@@ -6,8 +6,6 @@
 
 class ModuleProxy;
 
-namespace LogosSync {
-
 // PeerSync — Chat SDK real-time P2P messaging wrapper.
 //
 // Each peer broadcasts messages to their deterministic "app channel"
@@ -66,5 +64,3 @@ private:
     QString       m_ownConvoId;
     QSet<QString> m_watchedConvos; // convo IDs we are actively watching
 };
-
-} // namespace LogosSync
