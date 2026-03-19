@@ -2,13 +2,14 @@
 #include <QCryptographicHash>
 #include "peer_sync.h"
 #include "sync_types.h"
+#include "module_proxy.h"
 
 class TestPeerSync : public QObject {
     Q_OBJECT
 private slots:
     void convoIdForPubkey_matchesDeriveConvoId()
     {
-        LogosSync::PeerSync ps;
+        PeerSync ps;
         ps.setAppPrefix("BLOG");
         const QString pubkey = "aabbccdd";
         QCOMPARE(ps.convoIdForPubkey(pubkey),
@@ -17,7 +18,7 @@ private slots:
 
     void convoIdForPubkey_defaultPrefix_usesLogos()
     {
-        LogosSync::PeerSync ps;
+        PeerSync ps;
         const QString pubkey = "aabbccdd";
         QCOMPARE(ps.convoIdForPubkey(pubkey),
                  LogosSync::deriveConvoId("logos", pubkey));
@@ -25,7 +26,7 @@ private slots:
 
     void convoIdForPubkey_changesWithPrefix()
     {
-        LogosSync::PeerSync ps;
+        PeerSync ps;
         ps.setAppPrefix("NOTES");
         const QString pubkey = "aabbccdd";
         QVERIFY(ps.convoIdForPubkey(pubkey) !=
@@ -34,13 +35,13 @@ private slots:
 
     void isAvailable_noClient_returnsFalse()
     {
-        LogosSync::PeerSync ps;
+        PeerSync ps;
         QVERIFY(!ps.isAvailable());
     }
 
     void isAvailable_withClient_returnsTrue()
     {
-        LogosSync::PeerSync ps;
+        PeerSync ps;
         ModuleProxy proxy;
         ps.setChatClient(&proxy);
         QVERIFY(ps.isAvailable());
@@ -48,22 +49,22 @@ private slots:
 
     void start_noClient_emitsStarted()
     {
-        LogosSync::PeerSync ps;
-        QSignalSpy spy(&ps, &LogosSync::PeerSync::started);
+        PeerSync ps;
+        QSignalSpy spy(&ps, &PeerSync::started);
         ps.start();
         QCOMPARE(spy.count(), 1);
     }
 
     void subscribe_thenReceive_emitsMessage()
     {
-        LogosSync::PeerSync ps;
+        PeerSync ps;
         ps.setAppPrefix("BLOG");
         const QString pubkey  = "cafebabe";
         const QString convoId = ps.convoIdForPubkey(pubkey);
 
         ps.subscribe(pubkey);
 
-        QSignalSpy spy(&ps, &LogosSync::PeerSync::messageReceived);
+        QSignalSpy spy(&ps, &PeerSync::messageReceived);
         const QByteArray payload = QByteArray("hello");
         const QString hex = QString::fromLatin1(payload.toHex());
         ps.onMessage(convoId, pubkey, hex);
@@ -75,7 +76,7 @@ private slots:
 
     void unsubscribe_stopsMessages()
     {
-        LogosSync::PeerSync ps;
+        PeerSync ps;
         ps.setAppPrefix("BLOG");
         const QString pubkey  = "deadbeef";
         const QString convoId = ps.convoIdForPubkey(pubkey);
@@ -83,7 +84,7 @@ private slots:
         ps.subscribe(pubkey);
         ps.unsubscribe(pubkey);
 
-        QSignalSpy spy(&ps, &LogosSync::PeerSync::messageReceived);
+        QSignalSpy spy(&ps, &PeerSync::messageReceived);
         ps.onMessage(convoId, pubkey,
                      QString::fromLatin1(QByteArray("ignored").toHex()));
         QCOMPARE(spy.count(), 0);
@@ -91,8 +92,8 @@ private slots:
 
     void onMessage_unknownConvo_notEmitted()
     {
-        LogosSync::PeerSync ps;
-        QSignalSpy spy(&ps, &LogosSync::PeerSync::messageReceived);
+        PeerSync ps;
+        QSignalSpy spy(&ps, &PeerSync::messageReceived);
         ps.onMessage("unknown-convo", "pubkey",
                      QString::fromLatin1(QByteArray("data").toHex()));
         QCOMPARE(spy.count(), 0);
@@ -100,20 +101,20 @@ private slots:
 
     void onMessage_invalidHex_notEmitted()
     {
-        LogosSync::PeerSync ps;
+        PeerSync ps;
         ps.setAppPrefix("BLOG");
         const QString pubkey  = "11223344";
         const QString convoId = ps.convoIdForPubkey(pubkey);
         ps.subscribe(pubkey);
 
-        QSignalSpy spy(&ps, &LogosSync::PeerSync::messageReceived);
+        QSignalSpy spy(&ps, &PeerSync::messageReceived);
         ps.onMessage(convoId, pubkey, "not-hex-!!");
         QCOMPARE(spy.count(), 0);
     }
 
     void broadcast_noClient_doesNotCrash()
     {
-        LogosSync::PeerSync ps;
+        PeerSync ps;
         ps.setAppPrefix("BLOG");
         ps.setOwnPubkey("aabbccdd");
         ps.broadcast(QByteArray("payload"));
@@ -121,7 +122,7 @@ private slots:
 
     void subscribe_doubleSubscribe_doesNotDuplicate()
     {
-        LogosSync::PeerSync ps;
+        PeerSync ps;
         ps.setAppPrefix("BLOG");
         const QString pubkey  = "aabbcc11";
         const QString convoId = ps.convoIdForPubkey(pubkey);
@@ -129,7 +130,7 @@ private slots:
         ps.subscribe(pubkey);
         ps.subscribe(pubkey); // second call is a no-op
 
-        QSignalSpy spy(&ps, &LogosSync::PeerSync::messageReceived);
+        QSignalSpy spy(&ps, &PeerSync::messageReceived);
         const QString hex = QString::fromLatin1(QByteArray("x").toHex());
         ps.onMessage(convoId, pubkey, hex);
         QCOMPARE(spy.count(), 1); // exactly one emission

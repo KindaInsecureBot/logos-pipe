@@ -1,5 +1,6 @@
 #include <QtTest>
 #include "content_store.h"
+#include "module_proxy.h"
 
 // ContentStore tests operate without a real storage backend.
 // They verify null-client safety and the public API surface.

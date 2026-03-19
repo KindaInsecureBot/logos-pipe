@@ -2,6 +2,7 @@
 #include <QCryptographicHash>
 #include "channel_sync.h"
 #include "sync_types.h"
+#include "module_proxy.h"
 
 class TestChannelSync : public QObject {
     Q_OBJECT
