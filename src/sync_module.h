@@ -50,7 +50,7 @@ public:
 
     // Direct sub-object access for in-process callers.
     LogosSync::ContentStore* contentStore() const { return m_contentStore; }
-    LogosSync::ChannelSync*  channelSync()  const { return m_channelSync; }
+    ChannelSync*             channelSync()  const { return m_channelSync; }
     LogosSync::PeerSync*     peerSync()     const { return m_peerSync; }
 
 signals:
@@ -73,7 +73,7 @@ signals:
 
 private:
     LogosSync::ContentStore* m_contentStore = nullptr;
-    LogosSync::ChannelSync*  m_channelSync  = nullptr;
+    ChannelSync*             m_channelSync  = nullptr;
     LogosSync::PeerSync*     m_peerSync     = nullptr;
 
     void connectSignals();

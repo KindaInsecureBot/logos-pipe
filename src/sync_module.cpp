@@ -2,10 +2,14 @@
 #include "sync_types.h"
 #include "module_proxy.h"
 
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
+
 SyncModule::SyncModule(QObject* parent)
     : QObject(parent)
     , m_contentStore(new LogosSync::ContentStore(this))
-    , m_channelSync(new LogosSync::ChannelSync(this))
+    , m_channelSync(new ChannelSync(this))
     , m_peerSync(new LogosSync::PeerSync(this))
 {
     connectSignals();
@@ -20,12 +24,13 @@ void SyncModule::connectSignals()
     connect(m_contentStore, &LogosSync::ContentStore::error,
             this, [this](const QString& msg) { emit syncError("content", msg); });
 
-    connect(m_channelSync, &LogosSync::ChannelSync::inscribed,
+    connect(m_channelSync, &ChannelSync::inscribed,
             this, &SyncModule::inscribed);
-    connect(m_channelSync, &LogosSync::ChannelSync::inscriptionReceived,
+    connect(m_channelSync, &ChannelSync::inscriptionReceived,
             this, &SyncModule::inscriptionReceived);
-    connect(m_channelSync, &LogosSync::ChannelSync::error,
-            this, [this](const QString& msg) { emit syncError("channel", msg); });
+    connect(m_channelSync, &ChannelSync::error,
+            this, [this](const QString& /*op*/, const QString& msg) {
+                emit syncError("channel", msg); });
 
     connect(m_peerSync, &LogosSync::PeerSync::messageReceived,
             this, &SyncModule::messageReceived);
@@ -41,7 +46,7 @@ void SyncModule::initLogos(LogosAPI* api)
         m_contentStore->setStorageClient(storage);
 
     if (ModuleProxy* zone = api->getClient("zone_module")) {
-        m_channelSync->setZoneClient(zone);
+        m_channelSync->setBlockchainClient(zone);
         connectZoneModule(api);
     }
 
@@ -62,7 +67,7 @@ void SyncModule::connectZoneModule(LogosAPI* api)
         const QString inscriptionId = args.value(2).toString();
         const QByteArray data       = QByteArray::fromHex(
             args.value(3).toString().toLatin1());
-        m_channelSync->onZoneInscription(channelId, inscriptionId, data);
+        m_channelSync->onInscription(channelId, inscriptionId, data);
     });
 }
 
@@ -101,7 +106,7 @@ bool SyncModule::contentRemove(const QString& cid)
 // static
 QString SyncModule::deriveChannelId(const QString& appPrefix, const QString& uniqueId)
 {
-    return LogosSync::ChannelSync::deriveChannelId(appPrefix, uniqueId);
+    return ChannelSync::deriveChannelId(appPrefix, uniqueId);
 }
 
 QString SyncModule::inscribe(const QString& channelId, const QByteArray& data)
@@ -111,7 +116,15 @@ QString SyncModule::inscribe(const QString& channelId, const QByteArray& data)
 
 QString SyncModule::queryChannel(const QString& channelId)
 {
-    return m_channelSync->queryChannel(channelId);
+    const auto entries = m_channelSync->queryChannel(channelId);
+    QJsonArray arr;
+    for (const auto& [id, data] : entries) {
+        QJsonObject obj;
+        obj["id"]   = id;
+        obj["data"] = QString::fromLatin1(data.toHex());
+        arr.append(obj);
+    }
+    return QString::fromUtf8(QJsonDocument(arr).toJson(QJsonDocument::Compact));
 }
 
 void SyncModule::follow(const QString& channelId)
