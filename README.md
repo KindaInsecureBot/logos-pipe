@@ -488,3 +488,32 @@ nix build .#sync-module
     "dependencies": ["kv_module"]
 }
 ```
+
+---
+
+## ⚡ Vibecoded — with receipts
+
+This library was vibecoded by an AI agent ([Kibby](https://github.com/KindaInsecureBot)) in conversation with a human. That means the architecture, API design, and implementation were generated through iterative prompting — not hand-typed line by line.
+
+**What we actually verified:**
+
+| Check | Status |
+|-------|--------|
+| Unit tests (60 across 5 suites) | ✅ All passing |
+| Compilation against real Logos SDK (`logos-cpp-sdk` + `logos-liblogos`) | ✅ Clean build, no warnings |
+| Qt MOC generation (signals, slots, Q_INVOKABLE) | ✅ All headers parse correctly |
+| SDK type compatibility (`LogosAPIClient`, `PluginInterface`, `onEvent`) | ✅ Verified against actual SDK headers |
+| Build environment | Qt 6.10.2, GCC 15.2.0, Railway Nix box |
+| Output artifact | `sync_module_plugin.so` (429KB shared library) |
+
+**What we did NOT test:**
+
+- Loading the `.so` into a running Basecamp instance
+- Actual calls to `storage_module`, `blockchain_module`, or `chat_module`
+- Real L1 channel inscriptions or Storage uploads
+- Multi-plugin scenarios (blog + notes using sync_module simultaneously)
+- Performance under load
+
+The unit tests use stub `LogosAPIClient` instances that return empty `QVariant` — they verify null-safety, state management, signal routing, ID derivation, and API surface correctness. Integration testing against live Logos modules is the next step.
+
+**In short:** the plumbing is designed and compiles, but it hasn't carried water yet. PRs and integration tests welcome.
