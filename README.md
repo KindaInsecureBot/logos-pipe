@@ -131,12 +131,11 @@ connect(ch, &ChannelSync::error,               [](const QString& msg) { ... });
 
 ### ChannelIndexer
 
-Read/discovery counterpart to ChannelSync. Discovers channels by app prefix, reads history with cursor-based pagination, and follows live inscriptions.
+Read/discovery counterpart to ChannelSync. Discovers channels by app prefix, reads history with cursor-based pagination, and follows live inscriptions. Uses QSettings for local caching of discovered channels and cursors.
 
 ```cpp
 ChannelIndexer* ci = syncModule->channelIndexer();
 ci->setBlockchainClient(api->getClient("blockchain_module"));
-ci->setKvClient(api->getClient("kv_module"));  // optional: enables cache persistence
 
 // Discover all channels for an app prefix
 // → JSON: [{"channelId":"...", "latestCid":"...", "inscriptionCount":N}, ...]
@@ -485,7 +484,7 @@ nix build .#sync-module
     "version": "0.1.0",
     "type": "core",
     "interface": "com.logos.SyncModuleInterface",
-    "dependencies": ["kv_module"]
+    "dependencies": []
 }
 ```
 

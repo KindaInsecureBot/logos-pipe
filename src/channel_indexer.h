@@ -49,21 +49,20 @@ struct IndexerPage {
 //   ChannelIndexer → discover channels, read history, follow live
 //
 // Channels are discovered by app prefix (e.g., "BLOG" finds all λBLOG:* channels).
-// Uses kv_module for local caching of discovered channels and cursors.
+// Uses QSettings for local caching of discovered channels and cursors.
 class ChannelIndexer : public QObject {
     Q_OBJECT
 public:
     explicit ChannelIndexer(QObject* parent = nullptr);
 
     void setBlockchainClient(LogosAPIClient* blockchain);
-    void setKvClient(LogosAPIClient* kv);
     bool isAvailable() const { return m_blockchain != nullptr; }
 
     // === Discovery ===
 
     // Discover all channels matching an app prefix.
     // Returns JSON array: [{"channelId":"...", "latestCid":"...", "inscriptionCount":N}, ...]
-    // Results are cached in kv_module; call refreshDiscovery() to update.
+    // Results are cached locally; call refreshDiscovery() to update.
     QString discoverChannels(const QString& appPrefix);
 
     // Force refresh discovery cache for a prefix.
@@ -111,10 +110,10 @@ public:
 
     // === Cache Management ===
 
-    // Save current cursors and discovery cache to kv_module.
+    // Save current cursors and discovery cache to local QSettings.
     void saveCacheState();
 
-    // Load cached state from kv_module on startup.
+    // Load cached state from QSettings on startup.
     void loadCacheState();
 
 signals:
@@ -131,7 +130,6 @@ signals:
 
 private:
     LogosAPIClient* m_blockchain = nullptr;
-    LogosAPIClient* m_kv = nullptr;
 
     QSet<QString> m_followedChannels;
     QSet<QString> m_followedPrefixes;

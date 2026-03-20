@@ -2,8 +2,10 @@
 #include "logos_api_client.h"
 
 #include <QJsonDocument>
+#include <QSettings>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QSettings>
 
 // ── IndexerCursor ─────────────────────────────────────────────────────────────
 
@@ -72,11 +74,6 @@ void ChannelIndexer::setBlockchainClient(LogosAPIClient* blockchain)
     m_blockchain = blockchain;
 }
 
-void ChannelIndexer::setKvClient(LogosAPIClient* kv)
-{
-    m_kv = kv;
-}
-
 // ── Discovery ─────────────────────────────────────────────────────────────────
 
 QString ChannelIndexer::discoverChannels(const QString& appPrefix)
@@ -107,13 +104,11 @@ void ChannelIndexer::refreshDiscovery(const QString& appPrefix)
     const QStringList channels = queryChannelsByPrefix(appPrefix);
     m_discoveryCache[appPrefix] = channels;
 
-    if (m_kv) {
-        QJsonArray arr;
-        for (const QString& ch : channels) arr.append(ch);
-        m_kv->invokeRemoteMethod("kv_module", "set",
-            QStringLiteral("pipe:indexer:discovery:") + appPrefix,
-            QString::fromUtf8(QJsonDocument(arr).toJson(QJsonDocument::Compact)));
-    }
+    QSettings settings(QStringLiteral("Logos"), QStringLiteral("SyncModule"));
+    QJsonArray arr;
+    for (const QString& ch : channels) arr.append(ch);
+    settings.setValue(QStringLiteral("indexer/discovery/") + appPrefix,
+        QString::fromUtf8(QJsonDocument(arr).toJson(QJsonDocument::Compact)));
 }
 
 QStringList ChannelIndexer::queryChannelsByPrefix(const QString& appPrefix)
@@ -297,29 +292,26 @@ void ChannelIndexer::onBlockFinalized(quint64 /*slot*/)
 
 void ChannelIndexer::saveCacheState()
 {
-    if (!m_kv) return;
+    QSettings settings(QStringLiteral("Logos"), QStringLiteral("SyncModule"));
 
     // Save manifest of known prefixes so loadCacheState() knows what to load
     QJsonArray prefixArr;
     for (const QString& prefix : m_discoveryCache.keys())
         prefixArr.append(prefix);
-    m_kv->invokeRemoteMethod("kv_module", "set",
-        QStringLiteral("pipe:indexer:manifest"),
+    settings.setValue(QStringLiteral("indexer/manifest"),
         QString::fromUtf8(QJsonDocument(prefixArr).toJson(QJsonDocument::Compact)));
 
     // Save per-prefix channel lists
     for (auto it = m_discoveryCache.cbegin(); it != m_discoveryCache.cend(); ++it) {
         QJsonArray arr;
         for (const QString& ch : it.value()) arr.append(ch);
-        m_kv->invokeRemoteMethod("kv_module", "set",
-            QStringLiteral("pipe:indexer:discovery:") + it.key(),
+        settings.setValue(QStringLiteral("indexer/discovery/") + it.key(),
             QString::fromUtf8(QJsonDocument(arr).toJson(QJsonDocument::Compact)));
     }
 
     // Save latest inscriptions
     for (auto it = m_latestCache.cbegin(); it != m_latestCache.cend(); ++it) {
-        m_kv->invokeRemoteMethod("kv_module", "set",
-            QStringLiteral("pipe:indexer:latest:") + it.key(),
+        settings.setValue(QStringLiteral("indexer/latest/") + it.key(),
             QString::fromUtf8(
                 QJsonDocument(it.value().toJson()).toJson(QJsonDocument::Compact)));
     }
@@ -327,13 +319,13 @@ void ChannelIndexer::saveCacheState()
 
 void ChannelIndexer::loadCacheState()
 {
-    if (!m_kv) return;
+    QSettings settings(QStringLiteral("Logos"), QStringLiteral("SyncModule"));
 
     // Read manifest to learn which prefixes were previously cached
-    const QVariant manifestRaw = m_kv->invokeRemoteMethod(
-        "kv_module", "get", QStringLiteral("pipe:indexer:manifest"));
+    const QString manifestRaw =
+        settings.value(QStringLiteral("indexer/manifest")).toString();
     const QJsonDocument manifestDoc =
-        QJsonDocument::fromJson(manifestRaw.toString().toUtf8());
+        QJsonDocument::fromJson(manifestRaw.toUtf8());
     if (!manifestDoc.isArray()) return;
 
     for (const QJsonValue& pv : manifestDoc.array()) {
@@ -341,11 +333,10 @@ void ChannelIndexer::loadCacheState()
         if (prefix.isEmpty()) continue;
 
         // Load channel list
-        const QVariant chRaw = m_kv->invokeRemoteMethod(
-            "kv_module", "get",
-            QStringLiteral("pipe:indexer:discovery:") + prefix);
+        const QString chRaw =
+            settings.value(QStringLiteral("indexer/discovery/") + prefix).toString();
         const QJsonDocument chDoc =
-            QJsonDocument::fromJson(chRaw.toString().toUtf8());
+            QJsonDocument::fromJson(chRaw.toUtf8());
         if (!chDoc.isArray()) continue;
 
         QStringList channels;
@@ -355,11 +346,10 @@ void ChannelIndexer::loadCacheState()
 
         // Load latest inscription for each channel
         for (const QString& channelId : channels) {
-            const QVariant latestRaw = m_kv->invokeRemoteMethod(
-                "kv_module", "get",
-                QStringLiteral("pipe:indexer:latest:") + channelId);
+            const QString latestRaw =
+                settings.value(QStringLiteral("indexer/latest/") + channelId).toString();
             const QJsonDocument latestDoc =
-                QJsonDocument::fromJson(latestRaw.toString().toUtf8());
+                QJsonDocument::fromJson(latestRaw.toUtf8());
             if (latestDoc.isObject())
                 m_latestCache[channelId] = Inscription::fromJson(latestDoc.object());
         }

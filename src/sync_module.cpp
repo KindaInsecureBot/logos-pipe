@@ -58,10 +58,7 @@ void SyncModule::initLogos(LogosAPI* api)
         connectBlockchainModule(api);
     }
 
-    if (LogosAPIClient* kv = api->getClient("kv_module")) {
-        m_channelIndexer->setKvClient(kv);
-        m_channelIndexer->loadCacheState();
-    }
+    m_channelIndexer->loadCacheState();
 
     if (LogosAPIClient* chat = api->getClient("chat_module")) {
         m_peerSync->setChatClient(chat);
