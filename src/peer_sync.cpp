@@ -1,6 +1,6 @@
 #include "peer_sync.h"
 #include "sync_types.h"
-#include "module_proxy.h"
+#include "logos_api_client.h"
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -11,7 +11,7 @@ PeerSync::PeerSync(QObject* parent)
     : QObject(parent)
 {}
 
-void PeerSync::setChatClient(ModuleProxy* chat)
+void PeerSync::setChatClient(LogosAPIClient* chat)
 {
     m_chat = chat;
 }

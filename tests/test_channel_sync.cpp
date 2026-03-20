@@ -2,7 +2,7 @@
 #include <QCryptographicHash>
 #include "channel_sync.h"
 #include "sync_types.h"
-#include "module_proxy.h"
+#include "logos_api_client.h"
 
 class TestChannelSync : public QObject {
     Q_OBJECT
@@ -37,7 +37,7 @@ private slots:
     void isAvailable_withClient_returnsTrue()
     {
         ChannelSync cs;
-        ModuleProxy proxy;
+        LogosAPIClient proxy;
         cs.setBlockchainClient(&proxy);
         QVERIFY(cs.isAvailable());
     }
@@ -51,7 +51,7 @@ private slots:
     void inscribe_emptyChannelId_returnsEmpty()
     {
         ChannelSync cs;
-        ModuleProxy proxy;
+        LogosAPIClient proxy;
         cs.setBlockchainClient(&proxy);
         QVERIFY(cs.inscribe(QString(), QByteArray("data")).isEmpty());
     }

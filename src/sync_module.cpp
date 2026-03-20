@@ -1,6 +1,6 @@
 #include "sync_module.h"
 #include "sync_types.h"
-#include "module_proxy.h"
+#include "logos_api_client.h"
 
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -41,15 +41,15 @@ void SyncModule::connectSignals()
 
 void SyncModule::initLogos(LogosAPI* api)
 {
-    if (ModuleProxy* storage = api->getClient("storage_module"))
+    if (LogosAPIClient* storage = api->getClient("storage_module"))
         m_contentStore->setStorageClient(storage);
 
-    if (ModuleProxy* blockchain = api->getClient("blockchain_module")) {
+    if (LogosAPIClient* blockchain = api->getClient("blockchain_module")) {
         m_channelSync->setBlockchainClient(blockchain);
         connectBlockchainModule(api);
     }
 
-    if (ModuleProxy* chat = api->getClient("chat_module")) {
+    if (LogosAPIClient* chat = api->getClient("chat_module")) {
         m_peerSync->setChatClient(chat);
         connectChatModule(api);
     }
@@ -59,25 +59,29 @@ void SyncModule::initLogos(LogosAPI* api)
 
 void SyncModule::connectBlockchainModule(LogosAPI* api)
 {
-    // blockchain_module fires: inscriptionReceived(moduleId, channelId, inscriptionId, dataHex)
-    api->on("blockchain_module", "inscriptionReceived", [this](QVariantList args) {
-        if (args.size() < 4) return;
-        const QString channelId     = args.value(1).toString();
-        const QString inscriptionId = args.value(2).toString();
-        const QByteArray data       = QByteArray::fromHex(
-            args.value(3).toString().toLatin1());
-        m_channelSync->onInscription(channelId, inscriptionId, data);
+    // blockchain_module fires: inscriptionReceived(channelId, inscriptionId, dataHex)
+    LogosAPIClient* client = api->getClient("blockchain_module");
+    client->onEvent(nullptr, nullptr, "inscriptionReceived",
+        [this](const QString& /*eventName*/, const QVariantList& data) {
+        if (data.size() < 3) return;
+        const QString channelId     = data.value(0).toString();
+        const QString inscriptionId = data.value(1).toString();
+        const QByteArray dataBytes  = QByteArray::fromHex(
+            data.value(2).toString().toLatin1());
+        m_channelSync->onInscription(channelId, inscriptionId, dataBytes);
     });
 }
 
 void SyncModule::connectChatModule(LogosAPI* api)
 {
-    // chat_module fires: messageReceived(moduleId, convoId, senderPubkey, contentHex)
-    api->on("chat_module", "messageReceived", [this](QVariantList args) {
-        if (args.size() < 4) return;
-        const QString convoId      = args.value(1).toString();
-        const QString senderPubkey = args.value(2).toString();
-        const QString contentHex   = args.value(3).toString();
+    // chat_module fires: messageReceived(convoId, senderPubkey, contentHex)
+    LogosAPIClient* client = api->getClient("chat_module");
+    client->onEvent(nullptr, nullptr, "messageReceived",
+        [this](const QString& /*eventName*/, const QVariantList& data) {
+        if (data.size() < 3) return;
+        const QString convoId      = data.value(0).toString();
+        const QString senderPubkey = data.value(1).toString();
+        const QString contentHex   = data.value(2).toString();
         m_peerSync->onMessage(convoId, senderPubkey, contentHex);
     });
 }

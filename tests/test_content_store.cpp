@@ -1,6 +1,6 @@
 #include <QtTest>
 #include "content_store.h"
-#include "module_proxy.h"
+#include "logos_api_client.h"
 
 // ContentStore tests operate without a real storage backend.
 // They verify null-client safety and the public API surface.
@@ -40,7 +40,7 @@ private slots:
     void isAvailable_withClient_returnsTrue()
     {
         ContentStore cs;
-        ModuleProxy proxy;
+        LogosAPIClient proxy;
         cs.setStorageClient(&proxy);
         QVERIFY(cs.isAvailable());
     }
@@ -48,7 +48,7 @@ private slots:
     void store_emptyContent_returnsEmpty()
     {
         ContentStore cs;
-        ModuleProxy proxy;
+        LogosAPIClient proxy;
         cs.setStorageClient(&proxy);
         // Empty content: invokeRemoteMethod stub returns empty QVariant → empty CID.
         QVERIFY(cs.store(QByteArray()).isEmpty());
@@ -57,7 +57,7 @@ private slots:
     void fetch_emptyCid_returnsEmpty()
     {
         ContentStore cs;
-        ModuleProxy proxy;
+        LogosAPIClient proxy;
         cs.setStorageClient(&proxy);
         QVERIFY(cs.fetch(QString()).isEmpty());
     }
@@ -65,7 +65,7 @@ private slots:
     void store_emitsError_onEmptyCid()
     {
         ContentStore cs;
-        ModuleProxy proxy;
+        LogosAPIClient proxy;
         cs.setStorageClient(&proxy);
 
         QSignalSpy spy(&cs, &ContentStore::error);

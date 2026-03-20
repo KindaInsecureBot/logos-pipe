@@ -2,28 +2,29 @@
 #include "content_store.h"
 #include "channel_sync.h"
 #include "peer_sync.h"
-#include "plugin_interface.h"
+#include "core/interface.h"
 #include <QtPlugin>
 
-class ModuleProxy;
+class LogosAPIClient;
 
 // SyncModule — main PluginInterface entry point for logos-sync.
 //
 // Wires ContentStore, ChannelSync, and PeerSync to the Logos SDK module
-// system.  Other plugins obtain a proxy via:
-//   ModuleProxy* sync = api->getClient("sync_module");
+// system.  Other plugins obtain a client via:
+//   LogosAPIClient* sync = api->getClient("sync_module");
 // then call Q_INVOKABLE methods through invokeRemoteMethod().
 //
 // All three sub-APIs are also accessible directly when SyncModule is used
 // as an in-process library (tests, future mono-build scenarios).
 class SyncModule : public QObject, public PluginInterface {
     Q_OBJECT
-    Q_PLUGIN_METADATA(IID PluginInterface_iid FILE "modules/sync/manifest.json")
+    Q_PLUGIN_METADATA(IID "com.example.PluginInterface" FILE "metadata.json")
     Q_INTERFACES(PluginInterface)
 
 public:
     explicit SyncModule(QObject* parent = nullptr);
 
+    Q_INVOKABLE QString name() const override { return QStringLiteral("sync_module"); }
     Q_INVOKABLE QString version() const override { return QStringLiteral("0.1.0"); }
     Q_INVOKABLE void    initLogos(LogosAPI* api) override;
 

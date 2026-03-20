@@ -4,7 +4,7 @@
 #include <QString>
 #include <QByteArray>
 
-class ModuleProxy;
+class LogosAPIClient;
 
 // PeerSync — Chat SDK real-time P2P messaging wrapper.
 //
@@ -22,7 +22,7 @@ class PeerSync : public QObject {
 public:
     explicit PeerSync(QObject* parent = nullptr);
 
-    void setChatClient(ModuleProxy* chat);
+    void setChatClient(LogosAPIClient* chat);
     void setAppPrefix(const QString& appPrefix);
     void setOwnPubkey(const QString& pubkeyHex);
 
@@ -58,7 +58,7 @@ signals:
     void error(const QString& message);
 
 private:
-    ModuleProxy*  m_chat = nullptr;
+    LogosAPIClient*  m_chat = nullptr;
     QString       m_appPrefix;
     QString       m_ownPubkey;
     QString       m_ownConvoId;

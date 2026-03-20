@@ -2,7 +2,7 @@
 #include <QCryptographicHash>
 #include "peer_sync.h"
 #include "sync_types.h"
-#include "module_proxy.h"
+#include "logos_api_client.h"
 
 class TestPeerSync : public QObject {
     Q_OBJECT
@@ -42,7 +42,7 @@ private slots:
     void isAvailable_withClient_returnsTrue()
     {
         PeerSync ps;
-        ModuleProxy proxy;
+        LogosAPIClient proxy;
         ps.setChatClient(&proxy);
         QVERIFY(ps.isAvailable());
     }

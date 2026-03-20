@@ -4,7 +4,7 @@
 #include <QString>
 #include <QByteArray>
 
-class ModuleProxy;
+class LogosAPIClient;
 
 // ChannelSync — Zone SDK L1 channel abstraction.
 //
@@ -24,7 +24,7 @@ class ChannelSync : public QObject {
 public:
     explicit ChannelSync(QObject* parent = nullptr);
 
-    void setBlockchainClient(ModuleProxy* blockchain);
+    void setBlockchainClient(LogosAPIClient* blockchain);
     void setSigningKey(const QString& privkeyHex);
     bool isAvailable() const { return m_blockchain != nullptr; }
 
@@ -61,7 +61,7 @@ signals:
     void error(const QString& message);
 
 private:
-    ModuleProxy*  m_blockchain = nullptr;
+    LogosAPIClient*  m_blockchain = nullptr;
     QString       m_signingKey;
     QSet<QString> m_followedChannels;
 };

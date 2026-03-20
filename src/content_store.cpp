@@ -1,5 +1,5 @@
 #include "content_store.h"
-#include "module_proxy.h"
+#include "logos_api_client.h"
 
 #include <QFile>
 #include <QTemporaryFile>
@@ -11,7 +11,7 @@ ContentStore::ContentStore(QObject* parent)
     : QObject(parent)
 {}
 
-void ContentStore::setStorageClient(ModuleProxy* storage)
+void ContentStore::setStorageClient(LogosAPIClient* storage)
 {
     m_storage = storage;
 }

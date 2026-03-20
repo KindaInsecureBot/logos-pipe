@@ -89,7 +89,7 @@ if(BUILD_TESTS)
     set(CMAKE_AUTOMOC ON)
     enable_testing()
 
-    # tests/ first → module_proxy.h stub shadows the real SDK header
+    # tests/ first → logos_api_client.h stub shadows the real SDK header
     # src/  → application headers
     set(TEST_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/tests"

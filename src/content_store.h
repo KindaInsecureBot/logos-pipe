@@ -3,7 +3,7 @@
 #include <QByteArray>
 #include <QString>
 
-class ModuleProxy;
+class LogosAPIClient;
 
 // ContentStore — content-addressed storage wrapper (Logos Storage module).
 //
@@ -19,7 +19,7 @@ class ContentStore : public QObject {
 public:
     explicit ContentStore(QObject* parent = nullptr);
 
-    void setStorageClient(ModuleProxy* storage);
+    void setStorageClient(LogosAPIClient* storage);
     bool isAvailable() const { return m_storage != nullptr; }
 
     // Upload content bytes to storage.
@@ -45,5 +45,5 @@ signals:
     void error(const QString& message);
 
 private:
-    ModuleProxy* m_storage = nullptr;
+    LogosAPIClient* m_storage = nullptr;
 };

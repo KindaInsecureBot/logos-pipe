@@ -1,12 +1,12 @@
 #include "channel_sync.h"
 #include "sync_types.h"
-#include "module_proxy.h"
+#include "logos_api_client.h"
 
 ChannelSync::ChannelSync(QObject* parent)
     : QObject(parent)
 {}
 
-void ChannelSync::setBlockchainClient(ModuleProxy* blockchain)
+void ChannelSync::setBlockchainClient(LogosAPIClient* blockchain)
 {
     m_blockchain = blockchain;
 }
