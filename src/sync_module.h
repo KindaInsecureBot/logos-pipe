@@ -19,7 +19,7 @@ class LogosAPIClient;
 // as an in-process library (tests, future mono-build scenarios).
 class SyncModule : public QObject, public PluginInterface {
     Q_OBJECT
-    Q_PLUGIN_METADATA(IID "com.example.PluginInterface" FILE "metadata.json")
+    Q_PLUGIN_METADATA(IID "org.logos.SyncModuleInterface" FILE "metadata.json")
     Q_INTERFACES(PluginInterface)
 
 public:
@@ -92,6 +92,8 @@ signals:
 
     // Unified error signal: source is "content", "channel", "index", or "peer".
     void syncError(const QString& source, const QString& message);
+
+    void eventResponse(const QString& eventName, const QVariantList& data);
 
 private:
     ContentStore*   m_contentStore   = nullptr;
